@@ -129,6 +129,7 @@
         renderThresholds();
         bindEvents();
         loadSavedApiKey();
+        loadSavedLocation();
         updateGenerateButton();
     }
 
@@ -213,6 +214,25 @@
         }
     }
 
+    function loadSavedLocation() {
+        const savedLocation = localStorage.getItem('last_location');
+        if (savedLocation) {
+            try {
+                const location = JSON.parse(savedLocation);
+                if (location.lat && location.lng) {
+                    const latlng = L.latLng(location.lat, location.lng);
+                    setOrigin(latlng, location.address, true); // skipSave=true
+                    state.map.setView(latlng, 13);
+                    if (location.address) {
+                        elements.addressInput.value = location.address;
+                    }
+                }
+            } catch (e) {
+                console.error('Error loading saved location:', e);
+            }
+        }
+    }
+
     // ========================================
     // Event Binding
     // ========================================
@@ -294,7 +314,7 @@
             if (results && results.length > 0) {
                 const result = results[0];
                 const latlng = L.latLng(result.center.lat, result.center.lng);
-                setOrigin(latlng);
+                setOrigin(latlng, result.name); // saves to localStorage
                 state.map.setView(latlng, 13);
                 elements.addressInput.value = result.name;
                 showToast('Location found', 'success');
@@ -309,7 +329,7 @@
         });
     }
 
-    function setOrigin(latlng) {
+    function setOrigin(latlng, address = null, skipSave = false) {
         state.originLatLng = latlng;
 
         // Remove existing marker
@@ -332,6 +352,15 @@
 
         // Update coordinates display
         elements.coordsText.textContent = `Origin: ${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)}`;
+
+        // Save to localStorage (unless loading from saved data)
+        if (!skipSave) {
+            localStorage.setItem('last_location', JSON.stringify({
+                address: address || '',
+                lat: latlng.lat,
+                lng: latlng.lng
+            }));
+        }
 
         // Enable generate button
         updateGenerateButton();

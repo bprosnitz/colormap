@@ -157,6 +157,59 @@ html, body {
     box-shadow: 0 0 0 3px var(--primary-light);
 }
 
+/* Autocomplete */
+.autocomplete-wrapper {
+    position: relative;
+    flex: 1;
+}
+
+.autocomplete-wrapper .address-input {
+    width: 100%;
+}
+
+.autocomplete-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--surface);
+    border: 1px solid var(--border-color);
+    border-top: none;
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    max-height: 250px;
+    overflow-y: auto;
+    z-index: 1001;
+}
+
+.autocomplete-item {
+    padding: 10px 14px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border-color);
+    transition: background var(--transition);
+}
+
+.autocomplete-item:last-child {
+    border-bottom: none;
+}
+
+.autocomplete-item:hover,
+.autocomplete-item.selected {
+    background: var(--primary-light);
+}
+
+.autocomplete-item-name {
+    font-weight: 500;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+}
+
+.autocomplete-item-address {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
 .hint {
     font-size: 0.75rem;
     color: var(--text-muted);

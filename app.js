@@ -82,7 +82,10 @@
         apiKey: localStorage.getItem('ors_api_key') || CONFIG.defaultApiKey,
         isLoading: false,
         geocoder: null,
-        detailLevel: 0 // 0 = max detail (street-level), 100 = max smoothing
+        detailLevel: 0, // 0 = max detail (street-level), 100 = max smoothing
+        autocompleteTimer: null,
+        autocompleteResults: [],
+        autocompleteSelectedIndex: -1
     };
 
     // ========================================
@@ -116,6 +119,7 @@
         elements.transportBtns = document.querySelectorAll('.transport-btn');
         elements.detailSlider = document.getElementById('detail-slider');
         elements.detailHint = document.getElementById('detail-hint');
+        elements.autocompleteList = document.getElementById('autocomplete-list');
     }
 
     // ========================================
@@ -253,10 +257,18 @@
             }
         });
 
-        // Address search
+        // Address search and autocomplete
         elements.searchBtn.addEventListener('click', handleAddressSearch);
-        elements.addressInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') handleAddressSearch();
+        elements.addressInput.addEventListener('keydown', handleAddressKeydown);
+        elements.addressInput.addEventListener('input', handleAddressInput);
+        elements.addressInput.addEventListener('blur', () => {
+            // Delay hiding to allow click on autocomplete item
+            setTimeout(() => hideAutocomplete(), 200);
+        });
+        elements.addressInput.addEventListener('focus', () => {
+            if (state.autocompleteResults.length > 0) {
+                elements.autocompleteList.classList.remove('hidden');
+            }
         });
 
         // Measurement mode toggle
@@ -327,6 +339,168 @@
                 showToast('Address not found. Try a different search.', 'error');
             }
         });
+    }
+
+    function handleAddressInput(e) {
+        const query = e.target.value.trim();
+
+        // Clear previous timer
+        if (state.autocompleteTimer) {
+            clearTimeout(state.autocompleteTimer);
+        }
+
+        // Hide autocomplete if query is too short
+        if (query.length < 3) {
+            hideAutocomplete();
+            return;
+        }
+
+        // Debounce API calls (300ms)
+        state.autocompleteTimer = setTimeout(() => {
+            fetchAutocomplete(query);
+        }, 300);
+    }
+
+    function handleAddressKeydown(e) {
+        const list = elements.autocompleteList;
+        const items = list.querySelectorAll('.autocomplete-item');
+
+        if (list.classList.contains('hidden') || items.length === 0) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleAddressSearch();
+            }
+            return;
+        }
+
+        switch (e.key) {
+            case 'ArrowDown':
+                e.preventDefault();
+                state.autocompleteSelectedIndex = Math.min(
+                    state.autocompleteSelectedIndex + 1,
+                    items.length - 1
+                );
+                updateAutocompleteSelection(items);
+                break;
+
+            case 'ArrowUp':
+                e.preventDefault();
+                state.autocompleteSelectedIndex = Math.max(
+                    state.autocompleteSelectedIndex - 1,
+                    0
+                );
+                updateAutocompleteSelection(items);
+                break;
+
+            case 'Enter':
+                e.preventDefault();
+                if (state.autocompleteSelectedIndex >= 0) {
+                    selectAutocompleteItem(state.autocompleteSelectedIndex);
+                } else {
+                    handleAddressSearch();
+                }
+                break;
+
+            case 'Escape':
+                hideAutocomplete();
+                break;
+        }
+    }
+
+    async function fetchAutocomplete(query) {
+        try {
+            const response = await fetch(
+                `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=5`
+            );
+
+            if (!response.ok) return;
+
+            const data = await response.json();
+
+            if (data.features && data.features.length > 0) {
+                state.autocompleteResults = data.features.map(f => ({
+                    name: f.properties.name || '',
+                    city: f.properties.city || f.properties.county || '',
+                    state: f.properties.state || '',
+                    country: f.properties.country || '',
+                    lat: f.geometry.coordinates[1],
+                    lng: f.geometry.coordinates[0]
+                }));
+                renderAutocomplete();
+            } else {
+                hideAutocomplete();
+            }
+        } catch (error) {
+            console.error('Autocomplete error:', error);
+        }
+    }
+
+    function renderAutocomplete() {
+        const list = elements.autocompleteList;
+        list.innerHTML = '';
+        state.autocompleteSelectedIndex = -1;
+
+        state.autocompleteResults.forEach((result, index) => {
+            const item = document.createElement('div');
+            item.className = 'autocomplete-item';
+            item.dataset.index = index;
+
+            const addressParts = [result.city, result.state, result.country]
+                .filter(p => p)
+                .join(', ');
+
+            item.innerHTML = `
+                <div class="autocomplete-item-name">${result.name || addressParts}</div>
+                ${result.name && addressParts ? `<div class="autocomplete-item-address">${addressParts}</div>` : ''}
+            `;
+
+            item.addEventListener('click', () => selectAutocompleteItem(index));
+            item.addEventListener('mouseenter', () => {
+                state.autocompleteSelectedIndex = index;
+                updateAutocompleteSelection(list.querySelectorAll('.autocomplete-item'));
+            });
+
+            list.appendChild(item);
+        });
+
+        list.classList.remove('hidden');
+    }
+
+    function updateAutocompleteSelection(items) {
+        items.forEach((item, index) => {
+            item.classList.toggle('selected', index === state.autocompleteSelectedIndex);
+        });
+
+        // Scroll selected item into view
+        if (state.autocompleteSelectedIndex >= 0 && items[state.autocompleteSelectedIndex]) {
+            items[state.autocompleteSelectedIndex].scrollIntoView({ block: 'nearest' });
+        }
+    }
+
+    function selectAutocompleteItem(index) {
+        const result = state.autocompleteResults[index];
+        if (!result) return;
+
+        const latlng = L.latLng(result.lat, result.lng);
+        const displayName = [result.name, result.city, result.state, result.country]
+            .filter(p => p)
+            .join(', ');
+
+        elements.addressInput.value = displayName;
+        setOrigin(latlng, displayName);
+        state.map.setView(latlng, 13);
+        hideAutocomplete();
+
+        // Close sidebar on mobile
+        if (window.innerWidth <= 768) {
+            elements.sidebar.classList.remove('open');
+        }
+    }
+
+    function hideAutocomplete() {
+        elements.autocompleteList.classList.add('hidden');
+        state.autocompleteResults = [];
+        state.autocompleteSelectedIndex = -1;
     }
 
     function setOrigin(latlng, address = null, skipSave = false) {

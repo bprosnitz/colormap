@@ -81,7 +81,8 @@
         selectedThresholds: new Set([0, 1, 2, 3, 4]), // Default: first 5 thresholds
         apiKey: localStorage.getItem('ors_api_key') || CONFIG.defaultApiKey,
         isLoading: false,
-        geocoder: null
+        geocoder: null,
+        detailLevel: 0 // 0 = max detail (street-level), 100 = max smoothing
     };
 
     // ========================================
@@ -113,6 +114,8 @@
         elements.toast = document.getElementById('toast');
         elements.toastMessage = document.getElementById('toast-message');
         elements.transportBtns = document.querySelectorAll('.transport-btn');
+        elements.detailSlider = document.getElementById('detail-slider');
+        elements.detailHint = document.getElementById('detail-hint');
     }
 
     // ========================================
@@ -257,6 +260,9 @@
         elements.apiKeyInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') saveApiKey();
         });
+
+        // Detail level slider
+        elements.detailSlider.addEventListener('input', handleDetailChange);
     }
 
     // ========================================
@@ -433,6 +439,25 @@
         }
     }
 
+    function handleDetailChange() {
+        state.detailLevel = parseInt(elements.detailSlider.value);
+
+        // Update hint text based on detail level
+        let hintText;
+        if (state.detailLevel === 0) {
+            hintText = 'Maximum detail - follows road network precisely';
+        } else if (state.detailLevel <= 25) {
+            hintText = 'High detail - shows most street-level features';
+        } else if (state.detailLevel <= 50) {
+            hintText = 'Medium detail - balanced view';
+        } else if (state.detailLevel <= 75) {
+            hintText = 'Low detail - smoother boundaries';
+        } else {
+            hintText = 'Minimum detail - highly generalized shape';
+        }
+        elements.detailHint.textContent = hintText;
+    }
+
     // ========================================
     // Isochrone Generation
     // ========================================
@@ -482,7 +507,7 @@
                     locations: [[state.originLatLng.lng, state.originLatLng.lat]],
                     range: rangeValues,
                     range_type: rangeType,
-                    smoothing: 25,
+                    smoothing: state.detailLevel,
                     area_units: 'km'
                 })
             });

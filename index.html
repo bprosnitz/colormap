@@ -129,6 +129,24 @@
                     </div>
                 </section>
 
+                <!-- Detail Level -->
+                <section class="control-section">
+                    <h2>Shape Detail</h2>
+                    <div class="detail-control">
+                        <input type="range"
+                               id="detail-slider"
+                               min="0"
+                               max="100"
+                               value="0"
+                               class="detail-slider">
+                        <div class="detail-labels">
+                            <span>Street-level</span>
+                            <span>Smooth</span>
+                        </div>
+                        <p class="hint" id="detail-hint">Maximum detail - follows road network precisely</p>
+                    </div>
+                </section>
+
                 <!-- Generate Button -->
                 <section class="control-section">
                     <button id="generate-btn" class="btn btn-generate" disabled>

@@ -455,6 +455,10 @@
             `;
 
             item.addEventListener('click', () => selectAutocompleteItem(index));
+            item.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                selectAutocompleteItem(index);
+            });
             item.addEventListener('mouseenter', () => {
                 state.autocompleteSelectedIndex = index;
                 updateAutocompleteSelection(list.querySelectorAll('.autocomplete-item'));
@@ -462,6 +466,14 @@
 
             list.appendChild(item);
         });
+
+        // Position dropdown on mobile (fixed positioning)
+        if (window.innerWidth <= 768) {
+            const inputRect = elements.addressInput.getBoundingClientRect();
+            list.style.top = (inputRect.bottom + 4) + 'px';
+        } else {
+            list.style.top = '';
+        }
 
         list.classList.remove('hidden');
     }

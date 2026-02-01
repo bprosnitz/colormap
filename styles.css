@@ -159,7 +159,7 @@ html, body {
 
 /* Autocomplete */
 .autocomplete-wrapper {
-    position: relative;
+    position: static;
     flex: 1;
 }
 
@@ -168,18 +168,34 @@ html, body {
 }
 
 .autocomplete-list {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
+    position: fixed;
+    left: 20px;
+    right: 20px;
+    max-width: 340px;
     background: var(--surface);
     border: 1px solid var(--border-color);
-    border-top: none;
-    border-radius: 0 0 var(--radius-md) var(--radius-md);
+    border-radius: var(--radius-md);
     box-shadow: var(--shadow-lg);
-    max-height: 250px;
+    max-height: 200px;
     overflow-y: auto;
-    z-index: 1001;
+    z-index: 2000;
+    -webkit-overflow-scrolling: touch;
+}
+
+@media (min-width: 769px) {
+    .autocomplete-list {
+        position: absolute;
+        left: 0;
+        right: 0;
+        max-width: none;
+        top: 100%;
+        border-top: none;
+        border-radius: 0 0 var(--radius-md) var(--radius-md);
+    }
+
+    .autocomplete-wrapper {
+        position: relative;
+    }
 }
 
 .autocomplete-item {

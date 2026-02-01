@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Isochrone Map</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin="" />
+
+    <!-- Leaflet Control Geocoder CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder@2.4.0/dist/Control.Geocoder.css" />
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- App CSS -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Sidebar / Control Panel -->
+        <aside id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <h1>Isochrone Map</h1>
+                <button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle sidebar">
+                    <span class="toggle-icon"></span>
+                </button>
+            </div>
+
+            <div class="sidebar-content">
+                <!-- Location Input -->
+                <section class="control-section">
+                    <h2>Starting Point</h2>
+                    <div class="input-group">
+                        <input type="text"
+                               id="address-input"
+                               class="address-input"
+                               placeholder="Enter address or click map..."
+                               autocomplete="off">
+                        <button id="search-btn" class="btn btn-primary" aria-label="Search">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="8"/>
+                                <path d="m21 21-4.35-4.35"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <p class="hint">Or click anywhere on the map to set origin</p>
+                </section>
+
+                <!-- Mode Selection -->
+                <section class="control-section">
+                    <h2>Measurement Type</h2>
+                    <div class="toggle-group">
+                        <button id="mode-time" class="toggle-btn active" data-mode="time">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <polyline points="12 6 12 12 16 14"/>
+                            </svg>
+                            Time
+                        </button>
+                        <button id="mode-distance" class="toggle-btn" data-mode="distance">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M18 6L6 18M6 6l12 12"/>
+                            </svg>
+                            Distance
+                        </button>
+                    </div>
+                </section>
+
+                <!-- Transport Mode -->
+                <section class="control-section">
+                    <h2>Transport Mode</h2>
+                    <div class="transport-grid">
+                        <button class="transport-btn active" data-transport="driving-car" title="Driving">
+                            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M5 17a2 2 0 1 0 4 0 2 2 0 0 0-4 0Zm10 0a2 2 0 1 0 4 0 2 2 0 0 0-4 0Z"/>
+                                <path d="M5 17H3v-4l2-5h10l4 5h2v4h-2m-4 0H9"/>
+                                <path d="M3 8h18"/>
+                            </svg>
+                            <span>Car</span>
+                        </button>
+                        <button class="transport-btn" data-transport="foot-walking" title="Walking">
+                            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="4" r="2"/>
+                                <path d="M15 22v-4l-3-3v-4l4-3-1.5-4h-5L8 7l4 3v4l-3 3v5"/>
+                            </svg>
+                            <span>Walk</span>
+                        </button>
+                        <button class="transport-btn" data-transport="cycling-regular" title="Cycling">
+                            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="5" cy="17" r="3"/>
+                                <circle cx="19" cy="17" r="3"/>
+                                <circle cx="12" cy="6" r="2"/>
+                                <path d="m19 17-4-7-4 3-3 4"/>
+                                <path d="m5 17 4-7"/>
+                            </svg>
+                            <span>Bike</span>
+                        </button>
+                        <button class="transport-btn" data-transport="wheelchair" title="Wheelchair accessible">
+                            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="10" cy="4" r="2"/>
+                                <path d="M6 22a4 4 0 1 1 4-7"/>
+                                <path d="M10 11v4h6l2 5"/>
+                                <path d="M10 15v-4a2 2 0 0 1 2-2h3"/>
+                            </svg>
+                            <span>Accessible</span>
+                        </button>
+                    </div>
+                </section>
+
+                <!-- Time Thresholds -->
+                <section class="control-section" id="time-thresholds-section">
+                    <h2>Time Ranges</h2>
+                    <div class="threshold-list" id="time-threshold-list">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </section>
+
+                <!-- Distance Thresholds -->
+                <section class="control-section hidden" id="distance-thresholds-section">
+                    <h2>Distance Ranges</h2>
+                    <div class="threshold-list" id="distance-threshold-list">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </section>
+
+                <!-- Generate Button -->
+                <section class="control-section">
+                    <button id="generate-btn" class="btn btn-generate" disabled>
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="5 3 19 12 5 21 5 3"/>
+                        </svg>
+                        Generate Isochrones
+                    </button>
+                    <button id="clear-btn" class="btn btn-secondary">
+                        Clear Map
+                    </button>
+                </section>
+
+                <!-- Legend -->
+                <section class="control-section" id="legend-section" style="display: none;">
+                    <h2>Legend</h2>
+                    <div id="legend" class="legend">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </section>
+
+                <!-- API Key Section -->
+                <section class="control-section api-section">
+                    <details>
+                        <summary>API Settings</summary>
+                        <div class="api-content">
+                            <p class="api-hint">Get a free API key from <a href="https://openrouteservice.org/dev/#/signup" target="_blank" rel="noopener">OpenRouteService</a></p>
+                            <input type="text"
+                                   id="api-key-input"
+                                   class="api-input"
+                                   placeholder="Enter your ORS API key"
+                                   autocomplete="off">
+                            <button id="save-api-key" class="btn btn-small">Save Key</button>
+                        </div>
+                    </details>
+                </section>
+            </div>
+        </aside>
+
+        <!-- Map Container -->
+        <main id="map-container">
+            <div id="map"></div>
+
+            <!-- Loading Overlay -->
+            <div id="loading" class="loading-overlay hidden">
+                <div class="loading-spinner"></div>
+                <p>Calculating isochrones...</p>
+            </div>
+
+            <!-- Mobile Controls -->
+            <button id="mobile-menu-btn" class="mobile-menu-btn" aria-label="Open menu">
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="3" y1="12" x2="21" y2="12"/>
+                    <line x1="3" y1="6" x2="21" y2="6"/>
+                    <line x1="3" y1="18" x2="21" y2="18"/>
+                </svg>
+            </button>
+
+            <!-- Coordinates Display -->
+            <div id="coords-display" class="coords-display">
+                <span id="coords-text">Click map to set origin</span>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast hidden">
+        <p id="toast-message"></p>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            crossorigin=""></script>
+
+    <!-- Leaflet Control Geocoder -->
+    <script src="https://unpkg.com/leaflet-control-geocoder@2.4.0/dist/Control.Geocoder.js"></script>
+
+    <!-- App JS -->
+    <script src="app.js"></script>
+</body>
+</html>

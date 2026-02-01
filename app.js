@@ -58,12 +58,12 @@
             'wheelchair': 'wheelchair'
         },
 
-        // Max ranges by transport mode (ORS limitations)
+        // Max ranges by transport mode (ORS free tier limitations)
         maxRanges: {
-            'driving-car': { time: 18000, distance: 150000 },      // 5 hours, 150 km
-            'foot-walking': { time: 7200, distance: 20000 },       // 2 hours, 20 km
-            'cycling-regular': { time: 10800, distance: 50000 },   // 3 hours, 50 km
-            'wheelchair': { time: 7200, distance: 20000 }          // 2 hours, 20 km
+            'driving-car': { time: 3600, distance: 50000 },       // 1 hour, 50 km
+            'foot-walking': { time: 3600, distance: 20000 },      // 1 hour, 20 km
+            'cycling-regular': { time: 3600, distance: 30000 },   // 1 hour, 30 km
+            'wheelchair': { time: 3600, distance: 20000 }         // 1 hour, 20 km
         }
     };
 

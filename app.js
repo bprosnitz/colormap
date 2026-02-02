@@ -277,8 +277,10 @@
 
         // Transport mode selection
         elements.transportBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                const mode = btn.dataset.transport;
+            btn.addEventListener('click', (e) => {
+                // Find the button element even if click was on child (SVG, span)
+                const button = e.currentTarget;
+                const mode = button.dataset.transport;
                 setTransportMode(mode);
             });
         });
@@ -570,6 +572,13 @@
     }
 
     function setTransportMode(mode) {
+        // Validate mode - only accept known transport modes
+        const validModes = ['driving-car', 'foot-walking', 'cycling-regular', 'wheelchair'];
+        if (!mode || !validModes.includes(mode)) {
+            console.warn('Invalid transport mode:', mode, '- defaulting to driving-car');
+            mode = 'driving-car';
+        }
+
         state.transportMode = mode;
 
         // Update UI
